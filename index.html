@@ -1046,4 +1046,67 @@ window.addEventListener('scroll',()=>navbar.classList.toggle('scrolled',window.s
 function toggleMenu(){document.getElementById('mobileMenu').classList.toggle('open')}
 
 // Scroll reveal
-const obs=new IntersectionObserver((entrie
+const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// Counter animation
+function animateCounter(el){
+  const target=parseFloat(el.dataset.target);
+  const isDecimal=el.dataset.target.includes('.');
+  const duration=2000;
+  const start=performance.now();
+  const update=(now)=>{
+    const progress=Math.min((now-start)/duration,1);
+    const ease=1-Math.pow(1-progress,3);
+    const val=target*ease;
+    el.textContent=isDecimal?val.toFixed(1):Math.floor(val).toLocaleString();
+    if(progress<1)requestAnimationFrame(update);
+    else el.textContent=isDecimal?target.toFixed(1):target.toLocaleString();
+  };
+  requestAnimationFrame(update);
+}
+const counterObs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting){animateCounter(e.target);counterObs.unobserve(e.target)}})
+},{threshold:0.5});
+document.querySelectorAll('[data-target]').forEach(el=>counterObs.observe(el));
+
+// Phase progress bars
+const phaseObs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.querySelectorAll('.phase-fill').forEach(bar=>{bar.style.width=bar.dataset.width||'0%'});phaseObs.unobserve(e.target)}})
+},{threshold:0.3});
+document.querySelectorAll('.pilot-phases').forEach(el=>phaseObs.observe(el));
+
+// Contact form
+async function handleSubmit(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('.form-submit');
+  const original=btn.textContent;
+  btn.textContent='Sending…';
+  btn.disabled=true;
+  btn.style.opacity='.7';
+  try{
+    const res=await fetch('https://api.web3forms.com/submit',{
+      method:'POST',
+      headers:{'Accept':'application/json'},
+      body:new FormData(e.target)
+    });
+    const data=await res.json();
+    if(data.success==='true'||data.success===true){
+      btn.textContent='✓ Message sent — we'll be in touch!';
+      btn.style.background='linear-gradient(135deg,#00C864,#00A050)';
+      btn.style.color='#fff';
+      btn.style.opacity='1';
+      e.target.reset();
+      setTimeout(()=>{btn.textContent=original;btn.style.background='';btn.style.color='';btn.disabled=false},5000);
+    }else{throw new Error('Failed')}
+  }catch(err){
+    btn.textContent='Failed — please email info@orbitlinked.com';
+    btn.style.background='linear-gradient(135deg,#FF4444,#CC0000)';
+    btn.style.color='#fff';
+    btn.style.opacity='1';
+    setTimeout(()=>{btn.textContent=original;btn.style.background='';btn.style.color='';btn.disabled=false},5000);
+  }
+}
+</script>
+</body>
+</html>
